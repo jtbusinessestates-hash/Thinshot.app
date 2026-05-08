@@ -1,0 +1,40 @@
+{
+  "name": "WeightLog",
+  "type": "object",
+  "properties": {
+    "weight": {
+      "type": "number",
+      "description": "Weight value"
+    },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "kg",
+        "lbs"
+      ],
+      "description": "Unit of weight"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of measurement"
+    },
+    "waist_cm": {
+      "type": "number",
+      "description": "Waist measurement in cm"
+    },
+    "hips_cm": {
+      "type": "number",
+      "description": "Hips measurement in cm"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional notes"
+    }
+  },
+  "required": [
+    "weight",
+    "unit",
+    "date"
+  ]
+}
