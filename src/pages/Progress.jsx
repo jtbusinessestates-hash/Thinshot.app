@@ -31,17 +31,6 @@ export default function Progress() {
   const [form, setForm] = React.useState({ weight: "", unit: "kg", date: format(new Date(), "yyyy-MM-dd"), notes: "", waist_cm: "", hips_cm: "" });
 
   React.useEffect(() => {
-    const cleanJunkWeights = async () => {
-      const JUNK_WEIGHT_IDS = [
-        "69fd47cfb142ebf0f5c1883f","69fd42bdef52eab5e3c0d731",
-        "69fce28eadbd905b332a5dcc","69fce26b08f98aa9c96c6e71",
-        "69e3a894f73951e5df6f60bb","69e38905fc2b06fccfa154ab",
-      ];
-      for (const id of JUNK_WEIGHT_IDS) {
-        try { await base44.entities.WeightLog.delete(id); } catch(e) {}
-      }
-    };
-    cleanJunkWeights();
     loadData();
   }, []);
 
