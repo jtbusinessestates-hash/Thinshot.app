@@ -87,7 +87,7 @@ export default function Photos() {
   };
 
   const handleDelete = async (photoId) => {
-    if (!window.confirm("Delete this photo? This cannot be undone.")) return;
+    // delete confirmed by user action
     await base44.entities.PhotoLog.delete(photoId);
     await loadData();
   };
