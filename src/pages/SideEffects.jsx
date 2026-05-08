@@ -1,12 +1,16 @@
 import React from "react";
+import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
-import { Heart, Plus, CheckCircle2 } from "lucide-react";
+import { updateStreak } from '@/utils/streakUtils';
+import { Heart, Plus, CheckCircle2, Trash2 } from "lucide-react";
+
 import SideEffectInsight from "../components/SideEffectInsight";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import RatingInput from "../components/RatingInput";
 import EmptyState from "../components/EmptyState";
+import BackToDashboard from "../components/BackToDashboard";
 import { format, isToday, parseISO } from "date-fns";
 
 const EMOJI_MAP = { 1: "😊", 2: "🙂", 3: "😐", 4: "😟", 5: "😣" };
@@ -27,43 +31,71 @@ export default function SideEffects() {
 
   const loadLogs = async () => {
     setLoading(true);
-    const [data, medLogs] = await Promise.all([
-      base44.entities.SideEffectLog.list("-date", 30),
-      base44.entities.MedicationLog.list("-injection_date", 50),
-    ]);
-    setLogs(data);
-    const todayLog = data.find(l => isToday(parseISO(l.date)));
-    setCheckedToday(!!todayLog);
-    if (medLogs.length) {
-      const drug = medLogs[0];
-      setCurrentDrug(drug.drug_name === "Custom" ? drug.custom_drug_name : drug.drug_name);
-      const sorted = [...medLogs].sort((a, b) => new Date(a.injection_date) - new Date(b.injection_date));
-      const first = new Date(sorted[0].injection_date);
-      const wk = Math.floor((Date.now() - first.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
-      setWeekNumber(wk);
+    try {
+      const [data, medLogs] = await Promise.all([
+        base44.entities.SideEffectLog.list("-date", 30),
+        base44.entities.MedicationLog.list("-injection_date", 50),
+      ]);
+      setLogs(data);
+      const todayLog = data.find(l => isToday(parseISO(l.date)));
+      setCheckedToday(!!todayLog);
+      if (medLogs.length) {
+        const drug = medLogs[0];
+        setCurrentDrug(drug.drug_name === "Custom" ? drug.custom_drug_name : drug.drug_name);
+        const sorted = [...medLogs].sort((a, b) => new Date(a.injection_date) - new Date(b.injection_date));
+        const first = new Date(sorted[0].injection_date);
+        const wk = Math.floor((Date.now() - first.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+        setWeekNumber(wk);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load check-ins.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.nausea === 0 || form.fatigue === 0 || form.appetite === 0 || form.mood === 0) return;
-    const user = await base44.auth.me().catch(() => null);
-    if (!user) { alert("You must be logged in to save data"); return; }
+    if (form.nausea === 0 || form.fatigue === 0 || form.appetite === 0 || form.mood === 0) {
+      alert("Please rate all four fields before saving.");
+      return;
+    }
     setSaving(true);
     try {
-      const saved = await base44.entities.SideEffectLog.create({
-        ...form,
-        date: format(new Date(), "yyyy-MM-dd"),
-      });
+      const today = format(new Date(), "yyyy-MM-dd");
+      const all = await base44.entities.SideEffectLog.list("-date", 30);
+      const existing = all.find(r => r.date === today);
+      let saved;
+      if (existing) {
+        saved = await base44.entities.SideEffectLog.update(existing.id, { ...form, date: today });
+      } else {
+        saved = await base44.entities.SideEffectLog.create({ ...form, date: today });
+      }
+      await updateStreak();
+      toast.success("Check-in saved! ✓");
       setLastSaved(saved);
       setShowForm(false);
       setForm({ nausea: 0, fatigue: 0, appetite: 0, mood: 0, hunger: 5, notes: "" });
       await loadLogs();
     } catch (err) {
-      alert("Error: " + err.message);
+      console.error("Failed to save check-in:", err);
+      toast.error("Save failed. Please try again.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async (logId) => {
+    if (!logId) { console.error("No record ID to delete"); return; }
+    if (!window.confirm("Delete this check-in? This cannot be undone.")) return;
+    try {
+      await base44.entities.SideEffectLog.delete(logId);
+      toast.success("Deleted successfully");
+      await loadLogs();
+    } catch (err) {
+      console.error("Delete failed:", err);
+      toast.error("Failed to delete. Please try again.");
     }
   };
 
@@ -71,6 +103,7 @@ export default function SideEffects() {
 
   return (
     <div className="space-y-6">
+      <BackToDashboard />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-heading font-bold text-foreground">Side Effects</h1>
@@ -156,14 +189,22 @@ export default function SideEffects() {
       ) : (
         <div className="space-y-3">
           {logs.map((log) => (
-            <div key={log.id} className="bg-card border border-border rounded-2xl p-4">
+            <div key={log.id} className="group bg-card border border-border rounded-2xl p-4 hover:border-primary/30 transition-colors">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-semibold text-foreground">
                   {isToday(parseISO(log.date)) ? "Today" : format(parseISO(log.date), "EEEE, MMM d")}
                 </p>
-                <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-1 rounded-full font-medium">
-                  Avg: {avgScore(log)}/5
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-1 rounded-full font-medium">
+                    Avg: {avgScore(log)}/5
+                  </span>
+                  <button
+                    onClick={() => handleDelete(log.id)}
+                    className="w-6 h-6 rounded-lg hover:bg-destructive/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="w-3 h-3 text-destructive" />
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-4 gap-2">
                 {[
