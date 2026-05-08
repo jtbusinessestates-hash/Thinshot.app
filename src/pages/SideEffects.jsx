@@ -88,7 +88,7 @@ export default function SideEffects() {
 
   const handleDelete = async (logId) => {
     if (!logId) { console.error("No record ID to delete"); return; }
-    if (!window.confirm("Delete this check-in? This cannot be undone.")) return;
+    // delete confirmed by user action
     try {
       await base44.entities.SideEffectLog.delete(logId);
       toast.success("Deleted successfully");
