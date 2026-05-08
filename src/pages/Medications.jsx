@@ -279,8 +279,16 @@ export default function Medications() {
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <p className="text-xs text-muted-foreground">{format(new Date(log.injection_date), "HH:mm")}</p>
-                          <button onClick={() => handleDelete(log.id)}>
-                            <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive cursor-pointer transition-colors" />
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(log.id)}
+                            className={"p-1 rounded transition-colors " + (pendingDeleteId === log.id ? "bg-destructive/10" : "")}
+                          >
+                            {pendingDeleteId === log.id
+                              ? <span className="text-xs text-destructive font-semibold px-1">Confirm delete?</span>
+                              : <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive transition-colors" />
+                            }
+                          </button>
                           </button>
                         </div>
                       </div>
