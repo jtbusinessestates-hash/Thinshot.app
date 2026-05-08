@@ -1,0 +1,91 @@
+{
+  "name": "UserSettings",
+  "type": "object",
+  "properties": {
+    "subscription_status": {
+      "type": "string",
+      "enum": [
+        "free",
+        "pro"
+      ],
+      "default": "free",
+      "description": "User subscription tier"
+    },
+    "subscription_id": {
+      "type": "string",
+      "description": "Stripe subscription ID"
+    },
+    "reminder_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether reminders are enabled"
+    },
+    "reminder_time": {
+      "type": "string",
+      "description": "Preferred reminder time (HH:MM)"
+    },
+    "weight_unit": {
+      "type": "string",
+      "enum": [
+        "kg",
+        "lbs"
+      ],
+      "default": "kg"
+    },
+    "dose_unit": {
+      "type": "string",
+      "enum": [
+        "mg",
+        "units"
+      ],
+      "default": "mg"
+    },
+    "starting_weight": {
+      "type": "number",
+      "description": "Starting weight"
+    },
+    "goal_weight": {
+      "type": "number",
+      "description": "Goal weight"
+    },
+    "country": {
+      "type": "string"
+    },
+    "injection_day": {
+      "type": "string",
+      "enum": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ],
+      "description": "Preferred injection day"
+    },
+    "reminder_injection": {
+      "type": "boolean",
+      "default": true
+    },
+    "reminder_checkin": {
+      "type": "boolean",
+      "default": true
+    },
+    "is_pro": {
+      "type": "boolean",
+      "default": false
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe customer ID"
+    },
+    "stripe_subscription_id": {
+      "type": "string",
+      "description": "Stripe subscription ID"
+    }
+  },
+  "required": [
+    "weight_unit"
+  ]
+}
