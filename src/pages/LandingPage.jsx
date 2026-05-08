@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Syringe, BarChart2, Scale, Shield, ChevronDown,
-  CheckCircle2, Menu, X, TrendingDown, Activity, Pill
+  CheckCircle2, Menu, X, TrendingDown, Activity, Pill, Calculator
 } from 'lucide-react';
+import SageFloatingBubble from '@/components/SageFloatingBubble';
 
 // ── Navbar ──────────────────────────────────────────────────────────────────
 function Navbar({ onCTA }) {
@@ -22,12 +23,7 @@ function Navbar({ onCTA }) {
     <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#2ECC71] flex items-center justify-center shadow-sm">
-            <Syringe className="w-4 h-4 text-white" />
-          </div>
-          <span className="font-bold text-lg text-gray-900 font-heading">ThinShot</span>
-        </div>
+        <img src="https://base44.app/api/apps/69dcf5531dbc4aa150329160/files/mp/public/69dcf5531dbc4aa150329160/b237afaa5_thinshot-logo.svg" alt="ThinShot" className="h-10 w-auto" />
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-8">
@@ -37,6 +33,7 @@ function Navbar({ onCTA }) {
               {label}
             </a>
           ))}
+          <Link to="/blog" className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">Blog</Link>
         </div>
 
         {/* Desktop CTA */}
@@ -62,6 +59,7 @@ function Navbar({ onCTA }) {
               {label}
             </a>
           ))}
+          <Link to="/blog" className="text-sm text-gray-700 font-medium py-2 border-b border-gray-50" onClick={() => setOpen(false)}>Blog</Link>
           <div className="flex gap-2 pt-2">
             <Button variant="outline" size="sm" className="flex-1" onClick={onCTA}>Log in</Button>
             <Button size="sm" className="flex-1 bg-[#2ECC71] hover:bg-[#27ae60] text-white" onClick={onCTA}>
@@ -95,7 +93,7 @@ function Hero({ onCTA }) {
           <p className="text-lg md:text-xl text-gray-500 mb-8 max-w-lg mx-auto md:mx-0 leading-relaxed">
             Log your doses, monitor weight loss, and track side effects — all in one private, easy-to-use app. Built for Ozempic, Wegovy, Mounjaro & more.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start flex-wrap whitespace-nowrap">
             <Button
               size="lg"
               className="bg-[#2ECC71] hover:bg-[#27ae60] text-white text-base px-8 h-12 shadow-lg shadow-[#2ECC71]/25 font-semibold"
@@ -128,7 +126,7 @@ function Hero({ onCTA }) {
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
-                  {[['−5.8 kg', 'Lost'], ['14 wks', 'Journey'], ['98%', 'On track']].map(([val, lbl]) => (
+                  {[['−12.8 lbs', 'Lost'], ['14 wks', 'Journey'], ['98%', 'On track']].map(([val, lbl]) => (
                     <div key={lbl} className="bg-white/20 rounded-xl p-2 text-center">
                       <p className="text-white font-bold text-base leading-none">{val}</p>
                       <p className="text-white/70 text-xs mt-0.5">{lbl}</p>
@@ -139,10 +137,10 @@ function Hero({ onCTA }) {
               {/* Card body */}
               <div className="px-5 py-4 space-y-3">
                 {[
-                  { label: 'Last injection', value: 'Yesterday · Stomach', icon: <Syringe className="w-3.5 h-3.5 text-[#2ECC71]" /> },
-                  { label: 'This week weight', value: '81.2 kg (−0.4 kg)', icon: <TrendingDown className="w-3.5 h-3.5 text-[#2ECC71]" /> },
-                  { label: 'Side effects today', value: 'Mild nausea · 2/5', icon: <Activity className="w-3.5 h-3.5 text-[#2ECC71]" /> },
-                ].map(({ label, value, icon }) => (
+                    { label: 'Last injection', value: 'Yesterday · Stomach', icon: <Pill className="w-3.5 h-3.5 text-[#2ECC71]" /> },
+                    { label: 'This week weight', value: '179 lbs (−0.9 lbs)', icon: <TrendingDown className="w-3.5 h-3.5 text-[#2ECC71]" /> },
+                    { label: 'Side effects today', value: 'Mild nausea · 2/5', icon: <Activity className="w-3.5 h-3.5 text-[#2ECC71]" /> },
+                  ].map(({ label, value, icon }) => (
                   <div key={label} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-xl">
                     <div className="w-7 h-7 bg-[#2ECC71]/10 rounded-lg flex items-center justify-center flex-shrink-0">
                       {icon}
@@ -178,7 +176,7 @@ function TrustBar() {
       <div className="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-12">
         {[
           { icon: <Shield className="w-4 h-4 text-[#2ECC71]" />, text: 'Private & Secure' },
-          { icon: <Pill className="w-4 h-4 text-[#2ECC71]" />, text: 'Ozempic · Wegovy · Mounjaro · Saxenda' },
+          { icon: <Activity className="w-4 h-4 text-[#2ECC71]" />, text: 'Ozempic · Wegovy · Mounjaro · Saxenda' },
           { icon: <CheckCircle2 className="w-4 h-4 text-[#2ECC71]" />, text: 'No data sold. Ever.' },
         ].map(({ icon, text }) => (
           <div key={text} className="flex items-center gap-2 text-sm text-gray-600 font-medium">
@@ -194,7 +192,13 @@ function TrustBar() {
 function Features() {
   const features = [
     {
-      icon: <Syringe className="w-7 h-7 text-[#2ECC71]" />,
+      icon: <Calculator className="w-7 h-7 text-[#2ECC71]" />,
+      title: 'Dose Click Calculator',
+      desc: 'The only GLP-1 app with a built-in click counter. Get the exact number of clicks for your pen and tap your screen as you inject — never lose count again.',
+      points: ['Ozempic, Wegovy, Mounjaro & Saxenda', 'Tap counter vibrates when done', 'Saves every session to your history'],
+    },
+    {
+      icon: <Pill className="w-7 h-7 text-[#2ECC71]" />,
       title: 'Medication Logging',
       desc: 'Log every injection in seconds — track your dose, medication name, injection site, and date. Never miss a record again.',
       points: ['Ozempic, Wegovy, Mounjaro & more', 'Injection site rotation tracker', 'Upcoming dose reminders'],
@@ -255,22 +259,23 @@ function Features() {
 
 // ── Pricing ──────────────────────────────────────────────────────────────────
 function Pricing({ onCTA }) {
+  const [isAnnual, setIsAnnual] = useState(true);
+  
   const free = [
-    '30 days of data history',
+    '7-day free trial',
     'Injection logging',
     'Side effect tracking',
-    'Weight progress chart',
     'Email reminders',
-    'Up to 3 progress photos',
+    '1 progress photo',
   ];
   const pro = [
-    'Everything in Free',
-    'Unlimited data history',
-    'Unlimited progress photos',
-    'Health Summary PDF export',
-    'AI tip of the week',
-    'Shareable progress link',
-    'Priority support',
+    'Dose-coded weight chart',
+    'Estimated medication level',
+    'PDF doctor report',
+    'Shareable milestone card',
+    'Sage AI coach',
+    'Unlimited history',
+    'Unlimited photos',
   ];
 
   return (
@@ -284,6 +289,23 @@ function Pricing({ onCTA }) {
             Simple, honest pricing
           </h2>
           <p className="text-gray-500 text-lg">Start free. Upgrade when you're ready.</p>
+        </div>
+
+        {/* Toggle — Annual first/default */}
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <button
+            onClick={() => setIsAnnual(true)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${isAnnual ? 'bg-[#2ECC71] text-white' : 'bg-gray-100 text-gray-600'}`}
+          >
+            Annual
+            {isAnnual && <span className="text-[10px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full">Save 50%</span>}
+          </button>
+          <button
+            onClick={() => setIsAnnual(false)}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${!isAnnual ? 'bg-[#2ECC71] text-white' : 'bg-gray-100 text-gray-600'}`}
+          >
+            Monthly
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
@@ -311,18 +333,20 @@ function Pricing({ onCTA }) {
 
           {/* Pro */}
           <div className="relative bg-gradient-to-br from-[#2ECC71]/5 via-white to-emerald-50 border-2 border-[#2ECC71] rounded-2xl p-7 flex flex-col shadow-lg shadow-[#2ECC71]/10">
-            <Badge className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#2ECC71] text-white border-0 hover:bg-[#2ECC71] px-4 py-1 text-xs font-bold">
-              MOST POPULAR
+            <Badge className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-emerald-600 text-white border-0 hover:bg-emerald-600 px-4 py-1 text-xs font-bold whitespace-nowrap">
+              {isAnnual ? 'Best Value — Save 50%' : 'Most Popular'}
             </Badge>
             <div className="mb-6">
               <h3 className="font-bold text-xl text-gray-900 mb-1 font-heading">Pro</h3>
-              <div className="flex items-end gap-1 mb-2">
-                <span className="text-4xl font-bold text-gray-900">$7.99</span>
+              <div className="flex items-end gap-1 mb-1">
+                <span className="text-4xl font-bold text-gray-900">${isAnnual ? '2.50' : '4.99'}</span>
                 <span className="text-gray-400 mb-1">/month</span>
               </div>
-              <p className="text-sm text-gray-500">Unlock the full power of ThinShot.</p>
+              <p className="text-xs text-gray-400 mb-1">Less than half the price of competing apps.</p>
+              {isAnnual && <p className="text-xs text-emerald-600 font-semibold">Billed $29.99/year · Save 50%</p>}
+              {!isAnnual && <p className="text-xs text-gray-500">Billed monthly · $4.99/mo</p>}
             </div>
-            <ul className="space-y-3 mb-8 flex-1">
+            <ul className="space-y-3 mb-6 flex-1">
               {pro.map(f => (
                 <li key={f} className="flex items-center gap-2.5 text-sm text-gray-700">
                   <CheckCircle2 className="w-4 h-4 text-[#2ECC71] flex-shrink-0" /> {f}
@@ -335,6 +359,7 @@ function Pricing({ onCTA }) {
             >
               Upgrade to Pro
             </Button>
+            <p className="text-center text-xs text-gray-400 mt-2">Try Pro free for 7 days — no credit card required</p>
           </div>
         </div>
       </div>
@@ -388,7 +413,7 @@ function CTABanner({ onCTA }) {
           Start your journey today
         </h2>
         <p className="text-white/80 text-lg mb-8">
-          Join thousands managing their GLP-1 journey with ThinShot
+          Join people transforming their health with ThinShot
         </p>
         <Button
           size="lg"
@@ -398,6 +423,25 @@ function CTABanner({ onCTA }) {
           Get Started Free
         </Button>
         <p className="mt-4 text-white/60 text-sm">No credit card required</p>
+        <div className="flex flex-col items-center gap-3 mt-4">
+          <p className="text-xs text-white/50 font-medium uppercase tracking-wide">Also coming soon</p>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded-xl opacity-60 cursor-not-allowed">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+              <div className="text-left">
+                <p className="text-[9px] leading-none opacity-70">Coming soon on</p>
+                <p className="text-sm font-semibold leading-tight">App Store</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded-xl opacity-60 cursor-not-allowed">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.76c.3.17.65.19.96.08l13.5-7.76-2.95-2.95-11.51 10.63zM.4 1.81C.15 2.12 0 2.56 0 3.13v17.74c0 .57.15 1.01.4 1.32l.07.07 9.93-9.93v-.23L.47 1.74l-.07.07zM20.49 10.34l-2.82-1.63-3.27 3.27 3.27 3.27 2.84-1.64c.81-.47.81-1.23-.02-1.7v-.57zM4.14.24L17.64 8c0 0-11.5 10.63-11.5 10.63L3.18.32C3.49.21 3.84.07 4.14.24z"/></svg>
+              <div className="text-left">
+                <p className="text-[9px] leading-none opacity-70">Coming soon on</p>
+                <p className="text-sm font-semibold leading-tight">Google Play</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -409,14 +453,9 @@ function Footer() {
     <footer className="bg-gray-900 text-gray-400 py-10">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#2ECC71] flex items-center justify-center">
-              <Syringe className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <span className="font-bold text-white text-base font-heading">ThinShot</span>
-              <p className="text-xs text-gray-500 leading-none mt-0.5">Your GLP-1 Shot. Your Transformation.</p>
-            </div>
+          <img src="https://base44.app/api/apps/69dcf5531dbc4aa150329160/files/mp/public/69dcf5531dbc4aa150329160/b237afaa5_thinshot-logo.svg" alt="ThinShot" className="h-8 w-auto" />
+          <div>
+            <p className="text-xs text-gray-500 leading-none mt-0.5">Your GLP-1 Shot. Your Transformation.</p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
             <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
@@ -424,8 +463,9 @@ function Footer() {
             <a href="mailto:hello@thinshot.app" className="hover:text-white transition-colors">Contact</a>
           </div>
         </div>
-        <div className="border-t border-gray-800 pt-6 text-center text-xs text-gray-600">
-          © 2026 ThinShot. All rights reserved. Available Worldwide.
+        <div className="border-t border-gray-800 pt-6 text-center text-xs text-gray-600 space-y-1">
+          <p>Need help? <a href="mailto:support@thinshot.app" className="text-gray-400 hover:text-white transition-colors">support@thinshot.app</a></p>
+          <p>© 2026 ThinShot. All rights reserved. Available Worldwide.</p>
         </div>
       </div>
     </footer>
@@ -434,16 +474,20 @@ function Footer() {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
-  const navigate = useNavigate();
-
   useEffect(() => {
-    base44.auth.isAuthenticated().then((authed) => {
-      if (authed) navigate('/dashboard');
-    });
+    // Capture affiliate ref codes from URL
+    const params = new URLSearchParams(window.location.search);
+    const refCode = params.get('ref');
+    if (refCode) {
+      localStorage.setItem('thinshot_ref_code', refCode.toUpperCase());
+      localStorage.setItem('thinshot_ref', refCode);
+      base44.functions.invoke('trackReferral', { referral_code: refCode, event_type: 'click' }).catch(() => {});
+    }
+    // Do NOT check auth here — App.jsx handles redirecting logged-in users
   }, []);
 
   const handleCTA = () => {
-    base44.auth.redirectToLogin('/dashboard');
+    base44.auth.redirectToLogin('/onboarding');
   };
 
   return (
@@ -456,6 +500,7 @@ export default function LandingPage() {
       <FAQ />
       <CTABanner onCTA={handleCTA} />
       <Footer />
+      <SageFloatingBubble />
     </div>
   );
 }
