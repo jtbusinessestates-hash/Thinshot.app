@@ -79,9 +79,9 @@ export default function Medications() {
     const submitDate = format(new Date(form.injection_date), "yyyy-MM-dd");
     const sameDay = logs.filter(l => format(new Date(l.injection_date), "yyyy-MM-dd") === submitDate);
     if (sameDay.length >= 3) {
-      const confirmed = window.confirm(
-        "⚠️ You've already logged " + sameDay.length + " injection(s) on this date.\n\nAre you sure? Most GLP-1 medications are weekly. This is more than the recommended dose frequency."
-      );
+      // warn but allow (window.confirm blocked in PWA)
+      toast.warning("⚠️ You already logged " + sameDay.length + " injection(s) today. Double-check your dose.");
+      const confirmed = true;
       if (!confirmed) {
         setSaving(false);
         return;
@@ -144,7 +144,7 @@ export default function Medications() {
         <button
           className="text-xs text-destructive border border-destructive/30 rounded-xl px-3 py-2 hover:bg-destructive/10 transition-colors"
           onClick={async () => {
-            if (!window.confirm("Delete all injection logs from April 17, 2026?")) return;
+            // admin action — no confirm needed
             const all = await base44.entities.MedicationLog.list("-injection_date", 200);
             const testLogs = all.filter(l => l.injection_date && l.injection_date.startsWith("2026-04-17"));
             await Promise.all(testLogs.map(l => base44.entities.MedicationLog.delete(l.id)));
