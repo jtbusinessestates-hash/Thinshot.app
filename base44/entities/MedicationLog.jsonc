@@ -1,0 +1,52 @@
+{
+  "name": "MedicationLog",
+  "type": "object",
+  "properties": {
+    "drug_name": {
+      "type": "string",
+      "enum": [
+        "Ozempic",
+        "Wegovy",
+        "Mounjaro",
+        "Saxenda",
+        "Zepbound",
+        "Custom"
+      ],
+      "description": "Name of the GLP-1 medication"
+    },
+    "custom_drug_name": {
+      "type": "string",
+      "description": "Custom drug name if 'Custom' is selected"
+    },
+    "dose_mg": {
+      "type": "number",
+      "description": "Dose in milligrams"
+    },
+    "injection_site": {
+      "type": "string",
+      "enum": [
+        "Stomach",
+        "Left Thigh",
+        "Right Thigh",
+        "Left Arm",
+        "Right Arm"
+      ],
+      "description": "Where the injection was administered"
+    },
+    "injection_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date and time of injection"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional notes"
+    }
+  },
+  "required": [
+    "drug_name",
+    "dose_mg",
+    "injection_site",
+    "injection_date"
+  ]
+}
