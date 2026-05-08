@@ -107,7 +107,7 @@ export default function Progress() {
 
   const handleDelete = async (logId) => {
     if (!logId) { console.error("No record ID to delete"); return; }
-    if (!window.confirm("Delete this weight entry? This cannot be undone.")) return;
+    // delete confirmed by user action
     try {
       await base44.entities.WeightLog.delete(logId);
       toast.success("Deleted successfully");
