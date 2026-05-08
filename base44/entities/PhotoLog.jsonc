@@ -1,0 +1,33 @@
+{
+  "name": "PhotoLog",
+  "type": "object",
+  "properties": {
+    "photo_url": {
+      "type": "string",
+      "description": "URL of uploaded photo"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date photo was taken"
+    },
+    "weight": {
+      "type": "number",
+      "description": "Weight on this date"
+    },
+    "weight_unit": {
+      "type": "string",
+      "enum": [
+        "kg",
+        "lbs"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "photo_url",
+    "date"
+  ]
+}
