@@ -45,7 +45,7 @@ export default function Journal() {
 
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this journal entry?")) return;
+    // delete confirmed by user action
     try {
       await base44.entities.JournalEntry.delete(id);
       toast.success("Entry deleted.");
