@@ -9,7 +9,7 @@ import BackToDashboard from "@/components/BackToDashboard";
 
 const getRecipeImage = (name, imageUrl) => {
   if (imageUrl && !imageUrl.includes("placeholder")) return imageUrl;
-  const keyword = encodeURIComponent((name || "healthy food").split(" ").slice(0, 3).join(" ") + " food");
+  const keyword = encodeURIComponent((name || "healthy food").replace(/[^a-zA-Z0-9 ]/g, "").split(" ").slice(0, 3).join(" ") + " food");
   return `https://source.unsplash.com/400x300/?${keyword}`;
 };
 
@@ -22,20 +22,6 @@ export default function Recipes() {
   const [adding, setAdding] = React.useState(null);
 
   React.useEffect(() => {
-    // One-time cleanup: delete duplicate recipe records
-    const cleanDupeRecipes = async () => {
-      const DUPE_RECIPE_IDS = [
-        "69fcac8ff76cb613c08ab4eb","69fcac8ff76cb613c08ab4ec","69fcac8ff76cb613c08ab4ed",
-        "69fcac8ff76cb613c08ab4ee","69fcac8ff76cb613c08ab4ef","69fcac8ff76cb613c08ab4f0",
-        "69fcac8ff76cb613c08ab4f1","69fcac8ff76cb613c08ab4f2","69fcac8ff76cb613c08ab4f3",
-        "69fcac8ff76cb613c08ab4f4","69fcac8ff76cb613c08ab4f5","69fcac8ff76cb613c08ab4f6",
-        "69fcac8ff76cb613c08ab4f7","69fcac8ff76cb613c08ab4f8","69fcac8ff76cb613c08ab4f9",
-      ];
-      for (const id of DUPE_RECIPE_IDS) {
-        try { await base44.entities.Recipe.delete(id); } catch(e) {}
-      }
-    };
-    cleanDupeRecipes();
     loadRecipes();
   }, []);
 
@@ -80,10 +66,10 @@ export default function Recipes() {
   };
 
   const filtered = recipes
-    .filter(r => selectedCategory === "All" ? true : (r.tags && r.tags.includes(selectedCategory)))
+    .filter(r => selectedCategory === "All" ? true : (r.category === selectedCategory || (r.tags && r.tags.toLowerCase().includes(selectedCategory.toLowerCase()))))
     .filter(r =>
       !search ||
-      r.name?.toLowerCase().includes(search.toLowerCase()) ||
+      r.title?.toLowerCase().includes(search.toLowerCase()) ||
       r.tags?.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -133,14 +119,14 @@ export default function Recipes() {
           {filtered.map(recipe => (
             <div key={recipe.id} className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
               <img
-                src={getRecipeImage(recipe.name, recipe.image_url)}
-                alt={recipe.name}
+                src={getRecipeImage(recipe.title, recipe.image_url)}
+                alt={recipe.title}
                 className="w-full h-44 object-cover"
                 onError={e => { e.target.src = `https://source.unsplash.com/400x300/?healthy-food`; }}
               />
               <div className="p-4">
                 <div className="flex items-start justify-between mb-1">
-                  <h3 className="font-semibold text-foreground text-sm leading-tight">{recipe.name}</h3>
+                  <h3 className="font-semibold text-foreground text-sm leading-tight">{recipe.title}</h3>
                   {recipe.tags && (
                     <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full ml-2 flex-shrink-0">{recipe.tags.split(",")[0]}</span>
                   )}
@@ -148,7 +134,7 @@ export default function Recipes() {
                 <div className="flex gap-3 text-xs text-muted-foreground mb-3 mt-1">
                   {recipe.protein_g && <span className="font-semibold text-blue-600">{recipe.protein_g}g protein</span>}
                   {recipe.calories && <span>{recipe.calories} kcal</span>}
-                  {recipe.prep_time_minutes && <span>{recipe.prep_time_minutes} min</span>}
+                  {recipe.prep_time_mins && <span>{recipe.prep_time_mins} min</span>}
                 </div>
                 <Button
                   size="sm"
