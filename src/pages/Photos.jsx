@@ -1,13 +1,17 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { Camera, Plus, X, Lock } from "lucide-react";
+import { hasPro } from "@/lib/subscriptionUtils";
+import { Camera, Plus, X, Lock, Trash2, GitCompare, Share2, Clock, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import EmptyState from "@/components/EmptyState";
 import ProGate from "@/components/ProGate";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, differenceInDays } from "date-fns";
 import { toast } from "sonner";
+import PhotoCompare from "@/components/photos/PhotoCompare";
+import ShareCard from "@/components/photos/ShareCard";
+import { showSageInsight } from "@/components/photos/SageInsightToast";
 
 const FREE_PHOTO_LIMIT = 3;
 
@@ -19,9 +23,17 @@ export default function Photos() {
   const [saving, setSaving] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
   const [showProGate, setShowProGate] = React.useState(false);
-  const [form, setForm] = React.useState({ photo_date: format(new Date(), "yyyy-MM-dd"), weight_at_date: "", notes: "", photo_url: "" });
+  const [view, setView] = React.useState("timeline"); // "timeline" | "grid"
+  const [showCompare, setShowCompare] = React.useState(false);
+  const [sharePhoto, setSharePhoto] = React.useState(null);
+  const [form, setForm] = React.useState({
+    photo_date: format(new Date(), "yyyy-MM-dd"),
+    weight_at_date: "",
+    notes: "",
+    photo_url: "",
+  });
 
-  const isPro = settings?.is_pro === true;
+  const isPro = hasPro(settings);
 
   React.useEffect(() => { loadData(); }, []);
 
@@ -29,18 +41,15 @@ export default function Photos() {
     setLoading(true);
     const [p, s] = await Promise.all([
       base44.entities.PhotoLog.list("-date", 100),
-      base44.entities.UserSettings.list("-created_date", 1),
+      base44.entities.UserSettings.list(),
     ]);
     setPhotos(p);
-    setSettings(s[0] || null);
+    setSettings(s?.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))?.[0] || null);
     setLoading(false);
   };
 
   const handleAddPhoto = () => {
-    if (!isPro && photos.length >= FREE_PHOTO_LIMIT) {
-      setShowProGate(true);
-      return;
-    }
+    if (!isPro && photos.length >= FREE_PHOTO_LIMIT) { setShowProGate(true); return; }
     setShowForm(true);
   };
 
@@ -56,11 +65,9 @@ export default function Photos() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.photo_url) { toast.error("Please upload a photo first."); return; }
-    const user = await base44.auth.me().catch(() => null);
-    if (!user) { alert("You must be logged in to save data"); return; }
     setSaving(true);
     try {
-      await base44.entities.PhotoLog.create({
+      const newPhoto = await base44.entities.PhotoLog.create({
         photo_url: form.photo_url,
         date: form.photo_date,
         weight: form.weight_at_date ? parseFloat(form.weight_at_date) : undefined,
@@ -68,42 +75,106 @@ export default function Photos() {
       });
       setShowForm(false);
       setForm({ photo_date: format(new Date(), "yyyy-MM-dd"), weight_at_date: "", notes: "", photo_url: "" });
-      await loadData();
-    } catch (err) {
-      alert("Error: " + err.message);
+      const refreshed = await base44.entities.PhotoLog.list("-date", 100);
+      setPhotos(refreshed);
+      // Fire Sage insight in background
+      showSageInsight({ photos: refreshed, newPhoto, unit, settings });
+    } catch (_) {
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
+  const handleDelete = async (photoId) => {
+    if (!window.confirm("Delete this photo? This cannot be undone.")) return;
+    await base44.entities.PhotoLog.delete(photoId);
+    await loadData();
+  };
+
   const unit = settings?.weight_unit || "kg";
+
+  // Sorted oldest→newest for timeline
+  const chronological = [...photos].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const firstPhoto = chronological[0];
+  const firstWeight = firstPhoto?.weight;
+
+  // Streak: consecutive days with any log (medication/weight/photo) — approximate from photo dates
+  const streakDays = (() => {
+    if (!firstPhoto) return 0;
+    return differenceInDays(new Date(), new Date(firstPhoto.date));
+  })();
+
+  const weightLostSinceStart = (photo) => {
+    if (!firstWeight || !photo.weight) return null;
+    return parseFloat((firstWeight - photo.weight).toFixed(1));
+  };
 
   return (
     <div className="space-y-6">
       {showProGate && <ProGate feature="Unlimited progress photos" onClose={() => setShowProGate(false)} />}
+      {showCompare && <PhotoCompare photos={photos} unit={unit} onClose={() => setShowCompare(false)} />}
+      {sharePhoto && (
+        <ShareCard
+          photo={sharePhoto}
+          weightLost={weightLostSinceStart(sharePhoto) || 0}
+          unit={unit}
+          streakDays={streakDays}
+          onClose={() => setSharePhoto(null)}
+        />
+      )}
 
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-heading font-bold text-foreground">Photos</h1>
           <p className="text-sm text-muted-foreground">Visual progress over time</p>
         </div>
-        <Button onClick={handleAddPhoto} className="rounded-xl gap-2">
-          <Plus className="w-4 h-4" /> Add Photo
-        </Button>
+        <div className="flex items-center gap-2">
+          {photos.length >= 2 && (
+            <Button variant="outline" size="sm" onClick={() => setShowCompare(true)} className="rounded-xl gap-1.5">
+              <GitCompare className="w-3.5 h-3.5" /> Compare
+            </Button>
+          )}
+          <Button onClick={handleAddPhoto} className="rounded-xl gap-2">
+            <Plus className="w-4 h-4" /> Add Photo
+          </Button>
+        </div>
       </div>
+
+      {/* View toggle */}
+      {photos.length > 0 && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setView("timeline")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${view === "timeline" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
+          >
+            <Clock className="w-3.5 h-3.5" /> Timeline
+          </button>
+          <button
+            onClick={() => setView("grid")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${view === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" /> Grid
+          </button>
+        </div>
+      )}
 
       {/* Free limit banner */}
       {!isPro && !loading && (
         <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
           <Lock className="w-4 h-4 text-amber-500 flex-shrink-0" />
-          <span>{photos.length}/{FREE_PHOTO_LIMIT} free photos used. <button onClick={() => setShowProGate(true)} className="underline font-semibold">Upgrade to Pro</button> for unlimited.</span>
+          <span>
+            {photos.length}/{FREE_PHOTO_LIMIT} free photos used.{" "}
+            <button onClick={() => setShowProGate(true)} className="underline font-semibold">Upgrade to Pro</button> for unlimited.
+          </span>
         </div>
       )}
 
       {/* Add Photo Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto" style={{ paddingBottom: "env(safe-area-inset-bottom, 0)" }}>
             <div className="flex items-center justify-between p-5 border-b border-border">
               <h2 className="font-heading font-semibold text-foreground">Add Progress Photo</h2>
               <button onClick={() => setShowForm(false)} className="w-8 h-8 rounded-lg hover:bg-accent flex items-center justify-center">
@@ -111,7 +182,6 @@ export default function Photos() {
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              {/* Photo Upload */}
               <div className="space-y-1.5">
                 <Label>Photo *</Label>
                 <label className="block cursor-pointer">
@@ -157,7 +227,7 @@ export default function Photos() {
         </div>
       )}
 
-      {/* Photo Grid */}
+      {/* Content */}
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 animate-pulse">
           {[...Array(4)].map((_, i) => <div key={i} className="aspect-square bg-muted rounded-xl" />)}
@@ -169,16 +239,88 @@ export default function Photos() {
           description="Add your first progress photo to track your visual transformation."
           action={<Button onClick={handleAddPhoto} className="rounded-xl gap-2"><Plus className="w-4 h-4" />Add First Photo</Button>}
         />
+      ) : view === "timeline" ? (
+        /* ── TIMELINE VIEW ── */
+        <div className="relative">
+          {/* Vertical line */}
+          <div className="absolute left-[28px] top-0 bottom-0 w-0.5 bg-border" />
+          <div className="space-y-6">
+            {chronological.map((photo, idx) => {
+              const lost = weightLostSinceStart(photo);
+              const weekNum = firstPhoto
+                ? Math.floor((new Date(photo.date) - new Date(firstPhoto.date)) / (7 * 24 * 60 * 60 * 1000))
+                : 0;
+              return (
+                <div key={photo.id} className="flex gap-4 items-start">
+                  {/* Timeline dot */}
+                  <div className={`relative z-10 w-14 flex-shrink-0 flex flex-col items-center`}>
+                    <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold ${idx === chronological.length - 1 ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground"}`}>
+                      {weekNum === 0 ? "S" : `W${weekNum}`}
+                    </div>
+                  </div>
+
+                  {/* Card */}
+                  <div className="flex-1 bg-card border border-border rounded-2xl overflow-hidden group">
+                    <div className="relative aspect-[4/3] overflow-hidden">
+                      <img src={photo.photo_url} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
+                      <button
+                        onClick={() => handleDelete(photo.id)}
+                        className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-black/40 hover:bg-destructive flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-white" />
+                      </button>
+                      {photo.weight && (
+                        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded-lg px-2.5 py-1">
+                          <span className="text-white text-xs font-bold">{photo.weight} {unit}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{photo.date ? format(parseISO(photo.date), "MMMM d, yyyy") : "Unknown date"}</p>
+                        {lost !== null && lost > 0 && (
+                          <p className="text-xs text-primary font-medium">-{lost} {unit} from start 🎉</p>
+                        )}
+                        {photo.notes && <p className="text-xs text-muted-foreground mt-0.5">{photo.notes}</p>}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSharePhoto(photo)}
+                        className="rounded-xl gap-1.5 flex-shrink-0"
+                      >
+                        <Share2 className="w-3.5 h-3.5" /> Share
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       ) : (
+        /* ── GRID VIEW ── */
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {photos.map(photo => (
             <div key={photo.id} className="relative group rounded-xl overflow-hidden border border-border bg-muted aspect-square">
               <img src={photo.photo_url} alt={photo.date} className="w-full h-full object-cover" />
               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                <p className="text-white text-xs font-semibold">{format(parseISO(photo.date), "MMM d, yyyy")}</p>
-                {photo.weight && (
-                  <p className="text-white/80 text-xs">{photo.weight} {unit}</p>
-                )}
+                <p className="text-white text-xs font-semibold">{photo.date ? format(parseISO(photo.date), "MMM d, yyyy") : "Unknown date"}</p>
+                {photo.weight && <p className="text-white/80 text-xs">{photo.weight} {unit}</p>}
+              </div>
+              <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => setSharePhoto(photo)}
+                  className="w-7 h-7 rounded-lg bg-black/40 hover:bg-primary flex items-center justify-center"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-white" />
+                </button>
+                <button
+                  onClick={() => handleDelete(photo.id)}
+                  className="w-7 h-7 rounded-lg bg-black/40 hover:bg-destructive flex items-center justify-center"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-white" />
+                </button>
               </div>
             </div>
           ))}
