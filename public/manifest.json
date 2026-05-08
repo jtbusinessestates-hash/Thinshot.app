@@ -1,0 +1,24 @@
+{
+  "name": "PenTrack",
+  "short_name": "PenTrack",
+  "description": "GLP-1 peptide & weight loss tracker",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#2ECC71",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192/2ECC71/ffffff?text=PT",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "https://placehold.co/512x512/2ECC71/ffffff?text=PT",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ]
+}
