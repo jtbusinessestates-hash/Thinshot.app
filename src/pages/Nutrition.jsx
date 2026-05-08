@@ -19,25 +19,6 @@ export default function Nutrition() {
   });
   const [water, setWater] = React.useState(0);
 
-  React.useEffect(() => {
-    // One-time cleanup: delete duplicate water logs from May 7
-    const cleanDupeWater = async () => {
-      const DUPE_WATER_IDS = [
-        "69fcac9ee97de4c4acfbffd1",
-        "69fcac8e099013f285a727d6",
-        "69fcac8e19570fa6507df14b",
-        "69fcac8c34430ab939d16388",
-        "69fcac8b1735828db62c769f",
-        "69fcac8ac07db893cfd078ee",
-        "69fcac89c01c7101c57ec040",
-      ];
-      for (const id of DUPE_WATER_IDS) {
-        try { await base44.entities.NutritionLog.delete(id); } catch(e) {}
-      }
-    };
-    cleanDupeWater();
-  }, []);
-
   React.useEffect(() => { loadForDate(selectedDate); }, [selectedDate]);
 
   const loadForDate = async (date) => {
