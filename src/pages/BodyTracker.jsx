@@ -79,7 +79,7 @@ export default function BodyTracker() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this entry?")) return;
+    // delete confirmed by user action
     try {
       await base44.entities.BodyMeasurementLog.delete(id);
       toast.success("Entry deleted.");
