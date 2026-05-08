@@ -1,6 +1,6 @@
-import React from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Bell, BellOff, Mail, Save } from "lucide-react";
+import { Bell, BellOff, Mail, Save, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -11,36 +11,46 @@ import { toast } from "sonner";
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export default function Reminders() {
-  const [settings, setSettings] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
-  const [saving, setSaving] = React.useState(false);
-  const [form, setForm] = React.useState({
+  const [settings, setSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
     reminder_injection: true,
     reminder_checkin: true,
     injection_day: "Monday",
-    reminder_email: "",
+    reminder_time_injection: "09:00",
+    reminder_time_checkin: "20:00",
   });
 
-  React.useEffect(() => { loadSettings(); }, []);
+  useEffect(() => { loadSettings(); }, []);
 
   const loadSettings = async () => {
     setLoading(true);
-    const data = await base44.entities.UserSettings.list("-created_date", 1);
-    if (data[0]) {
-      setSettings(data[0]);
-      setForm(prev => ({
-        ...prev,
-        reminder_injection: data[0].reminder_injection ?? true,
-        reminder_checkin: data[0].reminder_checkin ?? true,
-        injection_day: data[0].injection_day || "Monday",
-      }));
+    try {
+      const data = await base44.entities.UserSettings.list();
+      const d = data?.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))?.[0];
+      if (d) {
+        setSettings(d);
+        setForm(prev => ({
+          ...prev,
+          reminder_injection: d.reminder_injection ?? true,
+          reminder_checkin: d.reminder_checkin ?? true,
+          injection_day: d.injection_day || "Monday",
+          reminder_time_injection: d.reminder_time_injection || "09:00",
+          reminder_time_checkin: d.reminder_time_checkin || "20:00",
+        }));
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load settings.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSave = async () => {
     const user = await base44.auth.me().catch(() => null);
-    if (!user) { alert("You must be logged in to save data"); return; }
+    if (!user) { toast.error("Something went wrong. Please try again."); return; }
     setSaving(true);
     try {
       if (settings) {
@@ -48,19 +58,23 @@ export default function Reminders() {
           reminder_injection: form.reminder_injection,
           reminder_checkin: form.reminder_checkin,
           injection_day: form.injection_day,
+          reminder_time_injection: form.reminder_time_injection,
+          reminder_time_checkin: form.reminder_time_checkin,
         });
       } else {
         await base44.entities.UserSettings.create({
           reminder_injection: form.reminder_injection,
           reminder_checkin: form.reminder_checkin,
           injection_day: form.injection_day,
+          reminder_time_injection: form.reminder_time_injection,
+          reminder_time_checkin: form.reminder_time_checkin,
           weight_unit: "kg",
         });
       }
       toast.success("Reminders saved!");
       await loadSettings();
     } catch (err) {
-      alert("Error: " + err.message);
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -105,16 +119,29 @@ export default function Reminders() {
             />
           </div>
           {form.reminder_injection && (
-            <div className="mt-4 pt-4 border-t border-border">
-              <Label className="text-xs text-muted-foreground mb-2 block">Injection Day</Label>
-              <Select value={form.injection_day} onValueChange={(v) => setForm({ ...form, injection_day: v })}>
-                <SelectTrigger className="rounded-xl max-w-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DAYS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            <div className="mt-4 pt-4 border-t border-border space-y-4">
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">Injection Day</Label>
+                <Select value={form.injection_day} onValueChange={(v) => setForm({ ...form, injection_day: v })}>
+                  <SelectTrigger className="rounded-xl max-w-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DAYS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block flex items-center gap-1.5">
+                  <Clock className="w-3 h-3" /> Reminder Time
+                </Label>
+                <Input
+                  type="time"
+                  value={form.reminder_time_injection}
+                  onChange={(e) => setForm({ ...form, reminder_time_injection: e.target.value })}
+                  className="rounded-xl max-w-xs"
+                />
+              </div>
             </div>
           )}
         </div>
@@ -136,6 +163,19 @@ export default function Reminders() {
               onCheckedChange={(v) => setForm({ ...form, reminder_checkin: v })}
             />
           </div>
+          {form.reminder_checkin && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <Label className="text-xs text-muted-foreground mb-2 block flex items-center gap-1.5">
+                <Clock className="w-3 h-3" /> Reminder Time
+              </Label>
+              <Input
+                type="time"
+                value={form.reminder_time_checkin}
+                onChange={(e) => setForm({ ...form, reminder_time_checkin: e.target.value })}
+                className="rounded-xl max-w-xs"
+              />
+            </div>
+          )}
         </div>
 
         {/* Push Notification Info */}
