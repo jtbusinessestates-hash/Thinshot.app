@@ -1,0 +1,52 @@
+{
+  "name": "SideEffectLog",
+  "type": "object",
+  "properties": {
+    "symptom": {
+      "type": "string",
+      "description": "Primary symptom or side effect name"
+    },
+    "severity": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Severity rating 1-5"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the check-in"
+    },
+    "nausea": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Nausea rating 1-5"
+    },
+    "fatigue": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Fatigue rating 1-5"
+    },
+    "appetite": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Appetite rating 1-5"
+    },
+    "mood": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Mood rating 1-5"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Free text notes"
+    }
+  },
+  "required": [
+    "date"
+  ]
+}
