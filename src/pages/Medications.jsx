@@ -26,6 +26,7 @@ const drugColors = {
 
 export default function Medications() {
   const [logs, setLogs] = React.useState([]);
+  const [pendingDeleteId, setPendingDeleteId] = React.useState(null);
   const [showForm, setShowForm] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
@@ -106,7 +107,12 @@ export default function Medications() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this injection log?")) return;
+    if (pendingDeleteId !== id) {
+      setPendingDeleteId(id);
+      setTimeout(() => setPendingDeleteId(null), 3000);
+      return;
+    }
+    setPendingDeleteId(null);
     try {
       await base44.entities.MedicationLog.delete(id);
       toast.success("Injection deleted");
