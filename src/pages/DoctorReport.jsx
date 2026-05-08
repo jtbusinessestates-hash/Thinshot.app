@@ -15,16 +15,16 @@ export default function DoctorReport() {
         const cutoff = subDays(new Date(), 90);
         const [ml, sl, wl, sets] = await Promise.all([
           base44.entities.MedicationLog.list("-injection_date", 200),
-          base44.entities.SideEffectLog.list("-log_date", 200),
-          base44.entities.WeightLog.list("-log_date", 200),
+          base44.entities.SideEffectLog.list("-date", 200),
+          base44.entities.WeightLog.list("-date", 200),
           base44.entities.UserSettings.list("-created_date", 1),
         ]);
-        const since90 = d => new Date(d) >= cutoff;
+        const since90 = d => d && new Date(d) >= cutoff;
         setData({
-          medLogs: ml.filter(m => since90(m.injection_date)),
-          sideEffectLogs: sl.filter(s => since90(s.log_date)),
-          weightLogs: wl.filter(w => since90(w.log_date)),
-          settings: sets[0] || null,
+          medLogs: ml.filter(m => since90(m?.injection_date)),
+          sideEffectLogs: sl.filter(s => since90(s?.date)),
+          weightLogs: wl.filter(w => since90(w?.date)),
+          settings: sets?.[0] || null,
         });
       } catch (e) {
         setError("Unable to load report data.");
@@ -48,7 +48,7 @@ export default function DoctorReport() {
 
   const { medLogs, sideEffectLogs, weightLogs, settings } = data;
   const unit = settings?.weight_unit || "kg";
-  const sortedWeight = [...weightLogs].sort((a, b) => new Date(a.log_date) - new Date(b.log_date));
+  const sortedWeight = [...weightLogs].filter(w => w?.date && w?.weight).sort((a, b) => new Date(a.date) - new Date(b.date));
   const weightLost = sortedWeight.length >= 2
     ? (sortedWeight[0].weight - sortedWeight[sortedWeight.length - 1].weight).toFixed(1)
     : null;
@@ -104,9 +104,9 @@ export default function DoctorReport() {
               <tbody>
                 {sortedWeight.map(w => (
                   <tr key={w.id} className="border-b border-border/50">
-                    <td className="py-2 text-foreground">{format(parseISO(w.log_date), "MMM d, yyyy")}</td>
-                    <td className="py-2 text-right text-foreground">{w.weight} {unit}</td>
-                    <td className="py-2 text-right text-muted-foreground">{w.waist_cm ? `${w.waist_cm} cm` : "—"}</td>
+                    <td className="py-2 text-foreground">{w?.date ? format(parseISO(w.date), "MMM d, yyyy") : "—"}</td>
+                    <td className="py-2 text-right text-foreground">{w?.weight ?? "—"} {unit}</td>
+                    <td className="py-2 text-right text-muted-foreground">{w?.waist_cm ? `${w.waist_cm} cm` : "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -133,10 +133,10 @@ export default function DoctorReport() {
             <tbody>
               {medLogs.map(m => (
                 <tr key={m.id} className="border-b border-border/50">
-                  <td className="py-2 text-foreground">{format(new Date(m.injection_date), "MMM d, yyyy")}</td>
-                  <td className="py-2 text-foreground">{m.drug_name === "Custom" ? m.custom_drug_name : m.drug_name}</td>
-                  <td className="py-2 text-right text-foreground">{m.dose_mg} mg</td>
-                  <td className="py-2 text-right text-muted-foreground">{m.injection_site}</td>
+                  <td className="py-2 text-foreground">{m?.injection_date ? format(new Date(m.injection_date), "MMM d, yyyy") : "—"}</td>
+                  <td className="py-2 text-foreground">{m?.drug_name === "Custom" ? (m?.custom_drug_name ?? "Custom") : (m?.drug_name ?? "—")}</td>
+                  <td className="py-2 text-right text-foreground">{m?.dose_mg ?? "—"} mg</td>
+                  <td className="py-2 text-right text-muted-foreground">{m?.injection_site ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -176,14 +176,14 @@ export default function DoctorReport() {
                 </tr>
               </thead>
               <tbody>
-                {[...sideEffectLogs].sort((a, b) => new Date(b.log_date) - new Date(a.log_date)).map(s => (
+                {[...sideEffectLogs].filter(s => s?.date).sort((a, b) => new Date(b.date) - new Date(a.date)).map(s => (
                   <tr key={s.id} className="border-b border-border/50">
-                    <td className="py-2 text-foreground">{format(parseISO(s.log_date), "MMM d")}</td>
-                    <td className="py-2 text-center text-foreground">{s.nausea}</td>
-                    <td className="py-2 text-center text-foreground">{s.fatigue}</td>
-                    <td className="py-2 text-center text-foreground">{s.appetite}</td>
-                    <td className="py-2 text-center text-foreground">{s.mood}</td>
-                    <td className="py-2 text-muted-foreground text-xs">{s.notes || "—"}</td>
+                    <td className="py-2 text-foreground">{format(parseISO(s.date), "MMM d")}</td>
+                    <td className="py-2 text-center text-foreground">{s?.nausea ?? "—"}</td>
+                    <td className="py-2 text-center text-foreground">{s?.fatigue ?? "—"}</td>
+                    <td className="py-2 text-center text-foreground">{s?.appetite ?? "—"}</td>
+                    <td className="py-2 text-center text-foreground">{s?.mood ?? "—"}</td>
+                    <td className="py-2 text-muted-foreground text-xs">{s?.notes || "—"}</td>
                   </tr>
                 ))}
               </tbody>
